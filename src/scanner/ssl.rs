@@ -12,7 +12,6 @@ pub enum SslError {
 
     #[error("connection failed: {0}")]
     ConnectionFailed(String),
-
 }
 
 /// Certificate information.
@@ -156,7 +155,11 @@ impl SslScanner {
                 let enabled = self
                     .connect_cmd(host, port, &[flag, "-servername", host])
                     .output()
-                    .map(|o| o.status.success() && !String::from_utf8_lossy(&o.stderr).contains("no protocols available"))
+                    .map(|o| {
+                        o.status.success()
+                            && !String::from_utf8_lossy(&o.stderr)
+                                .contains("no protocols available")
+                    })
                     .unwrap_or(false);
 
                 ProtocolInfo {
@@ -175,7 +178,11 @@ impl SslScanner {
             // Use -tls1_2 to prevent TLS 1.3 from negotiating a strong cipher
             // that bypasses the -cipher filter (TLS 1.3 uses -ciphersuites instead)
             let result = self
-                .connect_cmd(host, port, &["-cipher", pattern, "-tls1_2", "-servername", host])
+                .connect_cmd(
+                    host,
+                    port,
+                    &["-cipher", pattern, "-tls1_2", "-servername", host],
+                )
                 .output();
 
             if let Ok(output) = result {
@@ -192,14 +199,13 @@ impl SslScanner {
 
                 if handshake_ok {
                     // Verify the negotiated cipher actually contains the weak pattern
-                    let negotiated_weak = combined.lines()
-                        .any(|line| {
-                            line.contains("Cipher is") && {
-                                let upper = line.to_uppercase();
-                                let pat = pattern.to_uppercase();
-                                upper.contains(&pat) && !upper.contains("Cipher is (NONE)")
-                            }
-                        });
+                    let negotiated_weak = combined.lines().any(|line| {
+                        line.contains("Cipher is") && {
+                            let upper = line.to_uppercase();
+                            let pat = pattern.to_uppercase();
+                            upper.contains(&pat) && !upper.contains("Cipher is (NONE)")
+                        }
+                    });
 
                     if negotiated_weak {
                         found.push(pattern.to_string());
@@ -311,16 +317,14 @@ fn parse_days_until(date_str: &str) -> i64 {
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .output()
+            && let Ok(epoch_str) = std::str::from_utf8(&output.stdout)
+            && let Ok(epoch) = epoch_str.trim().parse::<i64>()
         {
-            if let Ok(epoch_str) = std::str::from_utf8(&output.stdout) {
-                if let Ok(epoch) = epoch_str.trim().parse::<i64>() {
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs() as i64;
-                    return (epoch - now) / 86400;
-                }
-            }
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+            return (epoch - now) / 86400;
         }
     }
 
@@ -342,10 +346,7 @@ pub fn generate_ssl_findings(result: &SslScanResult) -> Vec<crate::checker::Find
                 title: "SSL Certificate Expired".to_string(),
                 description: format!(
                     "Certificate for {} expired {} days ago.\nSubject: {}\nExpiry: {}",
-                    result.target,
-                    -cert.days_until_expiry,
-                    cert.subject,
-                    cert.not_after
+                    result.target, -cert.days_until_expiry, cert.subject, cert.not_after
                 ),
                 affected_asset: asset.clone(),
                 remediation: "HARDENING:\n\
@@ -489,10 +490,7 @@ pub fn generate_ssl_findings(result: &SslScanResult) -> Vec<crate::checker::Find
         findings.push(crate::checker::Finding {
             severity: Severity::High,
             title: "Certificate Chain Invalid".to_string(),
-            description: format!(
-                "Certificate chain validation failed for {}",
-                result.target
-            ),
+            description: format!("Certificate chain validation failed for {}", result.target),
             affected_asset: asset.clone(),
             remediation: "HARDENING:\n\
                 1. Ensure all intermediate certificates are installed\n\
@@ -508,10 +506,7 @@ pub fn generate_ssl_findings(result: &SslScanResult) -> Vec<crate::checker::Find
         findings.push(crate::checker::Finding {
             severity: Severity::Medium,
             title: format!("Weak Cipher Suite Supported: {}", cipher),
-            description: format!(
-                "{} cipher suite is accepted by {}",
-                cipher, result.target
-            ),
+            description: format!("{} cipher suite is accepted by {}", cipher, result.target),
             affected_asset: asset.clone(),
             remediation: format!(
                 "HARDENING:\n\
@@ -520,9 +515,7 @@ pub fn generate_ssl_findings(result: &SslScanResult) -> Vec<crate::checker::Find
                 3. Follow Mozilla SSL Configuration Generator recommendations",
                 cipher
             ),
-            references: vec![
-                "https://ssl-config.mozilla.org/".to_string(),
-            ],
+            references: vec!["https://ssl-config.mozilla.org/".to_string()],
         });
     }
 
@@ -562,7 +555,8 @@ mod tests {
 
     #[test]
     fn test_extract_pem() {
-        let text = "some header\n-----BEGIN CERTIFICATE-----\nABC123\n-----END CERTIFICATE-----\nfooter";
+        let text =
+            "some header\n-----BEGIN CERTIFICATE-----\nABC123\n-----END CERTIFICATE-----\nfooter";
         let pem = extract_pem(text).unwrap();
         assert!(pem.starts_with("-----BEGIN CERTIFICATE-----"));
         assert!(pem.ends_with("-----END CERTIFICATE-----"));
@@ -627,10 +621,22 @@ mod tests {
             port: 443,
             cert: None,
             protocols: vec![
-                ProtocolInfo { name: "ssl3".to_string(), enabled: true },
-                ProtocolInfo { name: "tls1".to_string(), enabled: true },
-                ProtocolInfo { name: "tls1_2".to_string(), enabled: true },
-                ProtocolInfo { name: "tls1_3".to_string(), enabled: false },
+                ProtocolInfo {
+                    name: "ssl3".to_string(),
+                    enabled: true,
+                },
+                ProtocolInfo {
+                    name: "tls1".to_string(),
+                    enabled: true,
+                },
+                ProtocolInfo {
+                    name: "tls1_2".to_string(),
+                    enabled: true,
+                },
+                ProtocolInfo {
+                    name: "tls1_3".to_string(),
+                    enabled: false,
+                },
             ],
             weak_ciphers: vec!["RC4".to_string()],
             chain_valid: true,

@@ -12,7 +12,6 @@ pub enum HeadersError {
 
     #[error("connection failed: {0}")]
     ConnectionFailed(String),
-
 }
 
 /// Aggregated HTTP security headers scan results.
@@ -99,7 +98,15 @@ pub fn parse_headers(host: &str, raw_headers: &str) -> HeadersScanResult {
         let line_lower = line.to_lowercase();
         if line_lower.starts_with("set-cookie:") {
             let cookie_value = line[line.find(':').unwrap() + 1..].trim().to_string();
-            let cookie_name = cookie_value.split(';').next().unwrap_or("").split('=').next().unwrap_or("unknown").trim().to_string();
+            let cookie_name = cookie_value
+                .split(';')
+                .next()
+                .unwrap_or("")
+                .split('=')
+                .next()
+                .unwrap_or("unknown")
+                .trim()
+                .to_string();
 
             if !line_lower.contains("secure") {
                 cookies_without_secure.push(cookie_name.clone());
@@ -164,7 +171,10 @@ pub fn generate_headers_findings(result: &HeadersScanResult) -> Vec<crate::check
                 1. Add X-Frame-Options: DENY or SAMEORIGIN\n\
                 2. Also consider using CSP frame-ancestors directive"
                 .to_string(),
-            references: vec!["https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options".to_string()],
+            references: vec![
+                "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options"
+                    .to_string(),
+            ],
         });
     }
 
@@ -341,16 +351,27 @@ mod tests {
             cookies_without_secure: vec![],
             cookies_without_httponly: vec![],
             cookies_without_samesite: vec![],
-
         };
 
         let findings = generate_headers_findings(&result);
         assert_eq!(findings.len(), 5);
-        assert!(findings.iter().any(|f| f.title.contains("Content-Security-Policy")));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("Content-Security-Policy"))
+        );
         assert!(findings.iter().any(|f| f.title.contains("X-Frame-Options")));
-        assert!(findings.iter().any(|f| f.title.contains("X-Content-Type-Options")));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("X-Content-Type-Options"))
+        );
         assert!(findings.iter().any(|f| f.title.contains("Referrer-Policy")));
-        assert!(findings.iter().any(|f| f.title.contains("Permissions-Policy")));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("Permissions-Policy"))
+        );
     }
 
     #[test]
@@ -365,7 +386,6 @@ mod tests {
             cookies_without_secure: vec![],
             cookies_without_httponly: vec![],
             cookies_without_samesite: vec![],
-
         };
 
         let findings = generate_headers_findings(&result);
@@ -384,7 +404,6 @@ mod tests {
             cookies_without_secure: vec!["session".to_string()],
             cookies_without_httponly: vec!["session".to_string()],
             cookies_without_samesite: vec!["session".to_string()],
-
         };
 
         let findings = generate_headers_findings(&result);
@@ -408,12 +427,17 @@ mod tests {
             cookies_without_secure: vec!["s".to_string()],
             cookies_without_httponly: vec!["s".to_string()],
             cookies_without_samesite: vec!["s".to_string()],
-
         };
 
         let findings = generate_headers_findings(&result);
-        let medium_count = findings.iter().filter(|f| f.severity == Severity::Medium).count();
-        let low_count = findings.iter().filter(|f| f.severity == Severity::Low).count();
+        let medium_count = findings
+            .iter()
+            .filter(|f| f.severity == Severity::Medium)
+            .count();
+        let low_count = findings
+            .iter()
+            .filter(|f| f.severity == Severity::Low)
+            .count();
         // CSP, X-Frame-Options, Secure cookie, HttpOnly cookie = 4 medium
         assert_eq!(medium_count, 4);
         // X-Content-Type-Options, Referrer-Policy, Permissions-Policy, SameSite cookie = 4 low

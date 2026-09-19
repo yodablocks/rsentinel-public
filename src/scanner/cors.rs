@@ -12,7 +12,6 @@ pub enum CorsError {
 
     #[error("connection failed: {0}")]
     ConnectionFailed(String),
-
 }
 
 /// CORS scan results.
@@ -48,8 +47,10 @@ impl CorsScanner {
         let output = Command::new("curl")
             .args([
                 "-sI",
-                "-H", "Origin: https://evil.com",
-                "-m", &self.timeout.to_string(),
+                "-H",
+                "Origin: https://evil.com",
+                "-m",
+                &self.timeout.to_string(),
                 &url,
             ])
             .output()
@@ -224,7 +225,11 @@ mod tests {
         let findings = generate_cors_findings(&result);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].severity, Severity::Critical);
-        assert!(findings[0].title.contains("Origin Reflected with Credentials"));
+        assert!(
+            findings[0]
+                .title
+                .contains("Origin Reflected with Credentials")
+        );
     }
 
     #[test]

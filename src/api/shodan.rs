@@ -100,7 +100,8 @@ impl ShodanClient {
         self.rate_limiter.acquire().await;
 
         let url = format!("{}/shodan/host/{}", SHODAN_API_BASE, ip);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .query(&[("key", &self.api_key)])
             .send()
@@ -119,7 +120,8 @@ impl ShodanClient {
         self.rate_limiter.acquire().await;
 
         let url = format!("{}/shodan/host/search", SHODAN_API_BASE);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .query(&[("key", &self.api_key), ("query", &query.to_string())])
             .send()

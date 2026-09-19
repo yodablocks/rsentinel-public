@@ -13,7 +13,6 @@ pub enum DnsError {
 
     #[error("DNS query failed: {0}")]
     QueryFailed(String),
-
 }
 
 /// Aggregated DNS security scan results.
@@ -34,6 +33,12 @@ pub struct DnsScanResult {
 
 /// DNS security scanner using dig subprocess.
 pub struct DnsScanner;
+
+impl Default for DnsScanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DnsScanner {
     pub fn new() -> Self {
@@ -202,10 +207,10 @@ pub fn parse_nameservers(output: &str) -> Vec<String> {
             if line.starts_with(";;") || line.is_empty() {
                 break;
             }
-            if line.contains("NS") {
-                if let Some(ns) = line.split_whitespace().last() {
-                    nameservers.push(ns.trim_end_matches('.').to_string());
-                }
+            if line.contains("NS")
+                && let Some(ns) = line.split_whitespace().last()
+            {
+                nameservers.push(ns.trim_end_matches('.').to_string());
             }
         }
     }
@@ -373,7 +378,10 @@ pub fn generate_dns_findings(result: &DnsScanResult) -> Vec<crate::checker::Find
                 "Domain {} allows zone transfers (AXFR) from nameserver {}. \
                  This exposes the entire DNS zone, revealing all subdomains and records.",
                 domain,
-                result.zone_transfer_nameserver.as_deref().unwrap_or("unknown")
+                result
+                    .zone_transfer_nameserver
+                    .as_deref()
+                    .unwrap_or("unknown")
             ),
             affected_asset: domain.clone(),
             remediation: "HARDENING:\n\
@@ -568,11 +576,31 @@ example.com.  300  IN  SOA  ns1.example.com. admin.example.com. 2024010101 3600 
         assert_eq!(findings.len(), 5);
 
         use crate::checker::Severity;
-        assert!(findings.iter().any(|f| f.title.contains("SPF") && f.severity == Severity::Medium));
-        assert!(findings.iter().any(|f| f.title.contains("DMARC") && f.severity == Severity::Medium));
-        assert!(findings.iter().any(|f| f.title.contains("DKIM") && f.severity == Severity::Low));
-        assert!(findings.iter().any(|f| f.title.contains("DNSSEC") && f.severity == Severity::Medium));
-        assert!(findings.iter().any(|f| f.title.contains("Zone Transfer") && f.severity == Severity::High));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("SPF") && f.severity == Severity::Medium)
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("DMARC") && f.severity == Severity::Medium)
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("DKIM") && f.severity == Severity::Low)
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("DNSSEC") && f.severity == Severity::Medium)
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.title.contains("Zone Transfer") && f.severity == Severity::High)
+        );
     }
 
     #[test]

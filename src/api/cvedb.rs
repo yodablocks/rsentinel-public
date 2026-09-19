@@ -91,7 +91,7 @@ impl CveDbClient {
 
     /// Check if any CVEs have high severity (CVSS >= 7.0).
     #[allow(dead_code)]
-        pub fn filter_high_severity(cves: &[CveInfo]) -> Vec<&CveInfo> {
+    pub fn filter_high_severity(cves: &[CveInfo]) -> Vec<&CveInfo> {
         cves.iter()
             .filter(|cve| cve.cvss.unwrap_or(0.0) >= 7.0)
             .collect()
@@ -99,7 +99,7 @@ impl CveDbClient {
 
     /// Check if any CVEs have critical severity (CVSS >= 9.0).
     #[allow(dead_code)]
-        pub fn filter_critical(cves: &[CveInfo]) -> Vec<&CveInfo> {
+    pub fn filter_critical(cves: &[CveInfo]) -> Vec<&CveInfo> {
         cves.iter()
             .filter(|cve| cve.cvss.unwrap_or(0.0) >= 9.0)
             .collect()
@@ -107,7 +107,7 @@ impl CveDbClient {
 
     /// Get EPSS (Exploit Prediction Scoring System) high-risk CVEs.
     #[allow(dead_code)]
-        pub fn filter_high_epss(cves: &[CveInfo], threshold: f32) -> Vec<&CveInfo> {
+    pub fn filter_high_epss(cves: &[CveInfo], threshold: f32) -> Vec<&CveInfo> {
         cves.iter()
             .filter(|cve| cve.epss.unwrap_or(0.0) >= threshold)
             .collect()
@@ -163,19 +163,17 @@ mod tests {
 
     #[test]
     fn test_filter_critical() {
-        let cves = vec![
-            CveInfo {
-                cve_id: "CVE-2021-CRIT".to_string(),
-                summary: None,
-                cvss: Some(9.5),
-                cvss_version: None,
-                references: vec![],
-                published_time: None,
-                last_modified_time: None,
-                epss: None,
-                cpes: vec![],
-            },
-        ];
+        let cves = vec![CveInfo {
+            cve_id: "CVE-2021-CRIT".to_string(),
+            summary: None,
+            cvss: Some(9.5),
+            cvss_version: None,
+            references: vec![],
+            published_time: None,
+            last_modified_time: None,
+            epss: None,
+            cpes: vec![],
+        }];
 
         let critical = CveDbClient::filter_critical(&cves);
         assert_eq!(critical.len(), 1);

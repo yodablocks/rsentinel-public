@@ -11,7 +11,7 @@ pub mod scanner;
 
 pub use api::{CveDbClient, RateLimiter, ShodanClient};
 pub use checker::{ExposureChecker, ExposureReport, Finding, Severity};
-pub use scanner::{NmapScanner, ScanResult, PortInfo};
-pub use scanner::{SslScanner, SslScanResult, CertInfo, ProtocolInfo, SslError};
-pub use scanner::{HeadersScanner, HeadersScanResult, HeadersError};
-pub use scanner::{DnsScanner, DnsScanResult, DnsError};
+pub use scanner::{CertInfo, ProtocolInfo, SslError, SslScanResult, SslScanner};
+pub use scanner::{DnsError, DnsScanResult, DnsScanner};
+pub use scanner::{HeadersError, HeadersScanResult, HeadersScanner};
+pub use scanner::{NmapScanner, PortInfo, ScanResult};

@@ -10,14 +10,14 @@ mod api;
 mod checker;
 mod scanner;
 
-use crate::checker::{ExposureChecker, ExposureReport, Severity, Finding};
 use crate::checker::exposure::{ReportSummary, compute_grade};
+use crate::checker::{ExposureChecker, ExposureReport, Finding, Severity};
 use crate::scanner::NmapScanner;
-use crate::scanner::ssl::{SslScanner, generate_ssl_findings};
-use crate::scanner::headers::{HeadersScanner, generate_headers_findings};
-use crate::scanner::dns::{DnsScanner, generate_dns_findings};
 use crate::scanner::cors::{CorsScanner, generate_cors_findings};
+use crate::scanner::dns::{DnsScanner, generate_dns_findings};
+use crate::scanner::headers::{HeadersScanner, generate_headers_findings};
 use crate::scanner::paths::{PathsScanner, generate_paths_findings};
+use crate::scanner::ssl::{SslScanner, generate_ssl_findings};
 use crate::scanner::techdetect::{TechDetectScanner, generate_tech_findings};
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -153,6 +153,9 @@ async fn main() -> anyhow::Result<()> {
     let markdown = cli.markdown;
     let verbose = !json && !quiet && !sarif && !markdown;
 
+    // Assigned in every arm of the match below. Binding the match directly
+    // would mean restructuring ~370 lines of arms for no behavioural gain.
+    #[allow(clippy::needless_late_init)]
     let report: Option<ExposureReport>;
 
     match cli.command {
@@ -163,7 +166,15 @@ async fn main() -> anyhow::Result<()> {
 
             let checker = ExposureChecker::new(api_key);
             let r = checker.check_ip(&ip).await?;
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::ScanAi => {
@@ -173,11 +184,21 @@ async fn main() -> anyhow::Result<()> {
 
             let checker = ExposureChecker::new(api_key);
             let r = checker.check_ai_exposure().await?;
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::Scan { target, quick } => {
-            if verbose { println!("🔍 Scanning {} with nmap (no API calls)...\n", target); }
+            if verbose {
+                println!("🔍 Scanning {} with nmap (no API calls)...\n", target);
+            }
 
             let scanner = NmapScanner::new();
             let result = if quick {
@@ -187,81 +208,169 @@ async fn main() -> anyhow::Result<()> {
             };
 
             let r = generate_nmap_report(&target, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
 
-            if verbose { println!("⏱  Scan completed in {:.2} seconds", result.scan_time_seconds); }
+            if verbose {
+                println!(
+                    "⏱  Scan completed in {:.2} seconds",
+                    result.scan_time_seconds
+                );
+            }
             report = Some(r);
         }
         Commands::SslCheck { host, port } => {
-            if verbose { println!("🔒 Checking SSL/TLS on {}:{}...\n", host, port); }
+            if verbose {
+                println!("🔒 Checking SSL/TLS on {}:{}...\n", host, port);
+            }
 
             let scanner = SslScanner::new();
             let result = scanner.scan(&host, port)?;
             let r = generate_ssl_report(&host, port, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::HeadersCheck { host } => {
-            if verbose { println!("🔒 Checking HTTP security headers on {}...\n", host); }
+            if verbose {
+                println!("🔒 Checking HTTP security headers on {}...\n", host);
+            }
 
             let scanner = HeadersScanner::new();
             let result = scanner.scan(&host)?;
             let r = generate_headers_report(&host, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::DnsCheck { domain } => {
-            if verbose { println!("🔍 Checking DNS security for {}...\n", domain); }
+            if verbose {
+                println!("🔍 Checking DNS security for {}...\n", domain);
+            }
 
             let scanner = DnsScanner::new();
             let result = scanner.scan(&domain)?;
             let r = generate_dns_report(&domain, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::CorsCheck { host } => {
-            if verbose { println!("🔍 Checking CORS configuration on {}...\n", host); }
+            if verbose {
+                println!("🔍 Checking CORS configuration on {}...\n", host);
+            }
 
             let scanner = CorsScanner::new();
             let result = scanner.scan(&host)?;
             let r = generate_cors_report(&host, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::PathsCheck { host } => {
-            if verbose { println!("🔍 Probing sensitive paths on {}...\n", host); }
+            if verbose {
+                println!("🔍 Probing sensitive paths on {}...\n", host);
+            }
 
             let scanner = PathsScanner::new();
             let result = scanner.scan(&host)?;
             let r = generate_paths_report(&host, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::TechCheck { host } => {
-            if verbose { println!("🔍 Fingerprinting technologies on {}...\n", host); }
+            if verbose {
+                println!("🔍 Fingerprinting technologies on {}...\n", host);
+            }
 
             let scanner = TechDetectScanner::new();
             let result = scanner.scan(&host)?;
             let r = generate_tech_report(&host, &result);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
-        Commands::Audit { target, port, quick } => {
-            if verbose { println!("🛡  Running full security audit on {}\n", target); }
+        Commands::Audit {
+            target,
+            port,
+            quick,
+        } => {
+            if verbose {
+                println!("🛡  Running full security audit on {}\n", target);
+            }
             let mut all_findings: Vec<Finding> = Vec::new();
             // Track per-scanner results: (name, Result<Vec<Finding>>)
             let mut scanner_results: Vec<(&str, Result<Vec<Finding>, String>)> = Vec::new();
 
             // [1/7] Port scan (nmap)
-            if verbose { println!("[1/7] Port scan (nmap)..."); }
-            match (|| {
+            if verbose {
+                println!("[1/7] Port scan (nmap)...");
+            }
+            let res = {
                 let scanner = NmapScanner::new();
-                if quick { scanner.quick_scan(&target) } else { scanner.scan(&target) }
-            })() {
+                if quick {
+                    scanner.quick_scan(&target)
+                } else {
+                    scanner.scan(&target)
+                }
+            };
+            match res {
                 Ok(result) => {
                     let r = generate_nmap_report(&target, &result);
                     let findings = r.findings;
-                    if verbose { println!("      ✓ Found {} port findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} port findings\n", findings.len());
+                    }
                     scanner_results.push(("Port Scan", Ok(findings)));
                 }
                 Err(e) => {
@@ -271,11 +380,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [2/7] SSL/TLS check
-            if verbose { println!("[2/7] SSL/TLS check on port {}...", port); }
+            if verbose {
+                println!("[2/7] SSL/TLS check on port {}...", port);
+            }
             match SslScanner::new().scan(&target, port) {
                 Ok(result) => {
                     let findings = generate_ssl_findings(&result);
-                    if verbose { println!("      ✓ Found {} SSL/TLS findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} SSL/TLS findings\n", findings.len());
+                    }
                     scanner_results.push(("SSL/TLS", Ok(findings)));
                 }
                 Err(e) => {
@@ -285,11 +398,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [3/7] HTTP security headers
-            if verbose { println!("[3/7] HTTP security headers..."); }
+            if verbose {
+                println!("[3/7] HTTP security headers...");
+            }
             match HeadersScanner::new().scan(&target) {
                 Ok(result) => {
                     let findings = generate_headers_findings(&result);
-                    if verbose { println!("      ✓ Found {} header findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} header findings\n", findings.len());
+                    }
                     scanner_results.push(("Headers", Ok(findings)));
                 }
                 Err(e) => {
@@ -299,11 +416,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [4/7] DNS security
-            if verbose { println!("[4/7] DNS security..."); }
+            if verbose {
+                println!("[4/7] DNS security...");
+            }
             match DnsScanner::new().scan(&target) {
                 Ok(result) => {
                     let findings = generate_dns_findings(&result);
-                    if verbose { println!("      ✓ Found {} DNS findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} DNS findings\n", findings.len());
+                    }
                     scanner_results.push(("DNS", Ok(findings)));
                 }
                 Err(e) => {
@@ -313,11 +434,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [5/7] CORS check
-            if verbose { println!("[5/7] CORS configuration..."); }
+            if verbose {
+                println!("[5/7] CORS configuration...");
+            }
             match CorsScanner::new().scan(&target) {
                 Ok(result) => {
                     let findings = generate_cors_findings(&result);
-                    if verbose { println!("      ✓ Found {} CORS findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} CORS findings\n", findings.len());
+                    }
                     scanner_results.push(("CORS", Ok(findings)));
                 }
                 Err(e) => {
@@ -327,11 +452,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [6/7] Sensitive paths
-            if verbose { println!("[6/7] Sensitive path exposure..."); }
+            if verbose {
+                println!("[6/7] Sensitive path exposure...");
+            }
             match PathsScanner::new().scan(&target) {
                 Ok(result) => {
                     let findings = generate_paths_findings(&result);
-                    if verbose { println!("      ✓ Found {} path findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} path findings\n", findings.len());
+                    }
                     scanner_results.push(("Paths", Ok(findings)));
                 }
                 Err(e) => {
@@ -341,11 +470,15 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // [7/7] Technology fingerprinting
-            if verbose { println!("[7/7] Technology fingerprinting..."); }
+            if verbose {
+                println!("[7/7] Technology fingerprinting...");
+            }
             match TechDetectScanner::new().scan(&target) {
                 Ok(result) => {
                     let findings = generate_tech_findings(&result);
-                    if verbose { println!("      ✓ Found {} tech findings\n", findings.len()); }
+                    if verbose {
+                        println!("      ✓ Found {} tech findings\n", findings.len());
+                    }
                     scanner_results.push(("Tech Detect", Ok(findings)));
                 }
                 Err(e) => {
@@ -366,13 +499,31 @@ async fn main() -> anyhow::Result<()> {
             }
 
             let r = generate_audit_report(&target, all_findings);
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
         Commands::Demo => {
-            if verbose { println!("Running demo with sample findings...\n"); }
+            if verbose {
+                println!("Running demo with sample findings...\n");
+            }
             let r = build_demo_report();
-            if json { print_json(&r) } else if sarif { print_sarif(&r) } else if markdown { print_markdown(&r) } else { print_report(&r) }
+            if json {
+                print_json(&r)
+            } else if sarif {
+                print_sarif(&r)
+            } else if markdown {
+                print_markdown(&r)
+            } else {
+                print_report(&r)
+            }
             report = Some(r);
         }
     }
@@ -380,7 +531,9 @@ async fn main() -> anyhow::Result<()> {
     // Write HTML report if requested
     if let (Some(path), Some(r)) = (html_path, &report) {
         write_html_report(r, &path)?;
-        if verbose { println!("HTML report written to {}", path); }
+        if verbose {
+            println!("HTML report written to {}", path);
+        }
     }
 
     // Check --fail-on threshold
@@ -391,7 +544,10 @@ async fn main() -> anyhow::Result<()> {
             "medium" => Severity::Medium,
             "low" => Severity::Low,
             other => {
-                eprintln!("Unknown severity level for --fail-on: {}. Use critical, high, medium, or low.", other);
+                eprintln!(
+                    "Unknown severity level for --fail-on: {}. Use critical, high, medium, or low.",
+                    other
+                );
                 std::process::exit(2);
             }
         };
@@ -416,11 +572,26 @@ fn generate_nmap_report(target: &str, result: &scanner::ScanResult) -> ExposureR
 
     let summary = ReportSummary {
         total_findings: findings.len(),
-        critical_count: findings.iter().filter(|f| f.severity == Severity::Critical).count(),
-        high_count: findings.iter().filter(|f| f.severity == Severity::High).count(),
-        medium_count: findings.iter().filter(|f| f.severity == Severity::Medium).count(),
-        low_count: findings.iter().filter(|f| f.severity == Severity::Low).count(),
-        info_count: findings.iter().filter(|f| f.severity == Severity::Info).count(),
+        critical_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Critical)
+            .count(),
+        high_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::High)
+            .count(),
+        medium_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Medium)
+            .count(),
+        low_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Low)
+            .count(),
+        info_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Info)
+            .count(),
     };
 
     let grade = compute_grade(&summary);
@@ -448,7 +619,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Implement IP allowlisting via firewall\n\
              3. Use SSH keys only (disable password auth)\n\
              4. Enable fail2ban or similar brute-force protection\n\
-             5. Consider using a non-standard port"
+             5. Consider using a non-standard port",
         ),
         23 => (
             Severity::Critical,
@@ -457,7 +628,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              1. IMMEDIATELY disable Telnet service\n\
              2. Replace with SSH for remote access\n\
              3. Block port 23 at firewall level\n\
-             4. Audit for any credentials transmitted over Telnet"
+             4. Audit for any credentials transmitted over Telnet",
         ),
         21 => (
             Severity::High,
@@ -466,7 +637,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              1. Replace FTP with SFTP or SCP\n\
              2. If FTP required, enable TLS (FTPS)\n\
              3. Restrict access via firewall\n\
-             4. Use strong credentials and disable anonymous access"
+             4. Use strong credentials and disable anonymous access",
         ),
         80 => (
             Severity::Low,
@@ -475,7 +646,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              1. Redirect all HTTP traffic to HTTPS\n\
              2. Enable HSTS headers\n\
              3. Ensure sensitive data never transmitted over HTTP\n\
-             4. Consider disabling HTTP entirely if not needed"
+             4. Consider disabling HTTP entirely if not needed",
         ),
         443 => (
             Severity::Info,
@@ -484,7 +655,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              1. HTTPS is generally safe for public services\n\
              2. Ensure TLS 1.2+ is enforced\n\
              3. Use strong cipher suites\n\
-             4. Keep certificates up to date"
+             4. Keep certificates up to date",
         ),
         3306 => (
             Severity::High,
@@ -494,7 +665,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Use VPN or SSH tunnel for database access\n\
              3. Ensure bind-address is set to 127.0.0.1 or private IP\n\
              4. Review and restrict database user privileges\n\
-             5. Enable TLS for database connections"
+             5. Enable TLS for database connections",
         ),
         5432 => (
             Severity::High,
@@ -504,7 +675,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Configure pg_hba.conf to restrict access\n\
              3. Use VPN or SSH tunnel for remote access\n\
              4. Enable SSL in postgresql.conf\n\
-             5. Review database user permissions"
+             5. Review database user permissions",
         ),
         6379 => (
             Severity::Critical,
@@ -514,7 +685,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Enable Redis AUTH with strong password\n\
              3. Bind to localhost or private network only\n\
              4. Enable TLS if remote access is required\n\
-             5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)"
+             5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)",
         ),
         27017 => (
             Severity::Critical,
@@ -524,7 +695,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Enable authentication (--auth flag)\n\
              3. Bind to localhost: bindIp: 127.0.0.1\n\
              4. Enable TLS/SSL for connections\n\
-             5. Create specific users with minimal privileges"
+             5. Create specific users with minimal privileges",
         ),
         9200 => (
             Severity::High,
@@ -534,7 +705,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Enable X-Pack security features\n\
              3. Set network.host to private IP\n\
              4. Implement authentication and TLS\n\
-             5. Use reverse proxy with auth for any web access"
+             5. Use reverse proxy with auth for any web access",
         ),
         2375 | 2376 => (
             Severity::Critical,
@@ -544,7 +715,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Use TLS client certificates if remote access needed\n\
              3. Block ports 2375/2376 at firewall\n\
              4. Use SSH tunneling for remote Docker access\n\
-             5. Consider using Docker contexts with SSH"
+             5. Consider using Docker contexts with SSH",
         ),
         8080 | 8443 => (
             Severity::Medium,
@@ -554,7 +725,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Ensure proper authentication is enabled\n\
              3. Use HTTPS with valid certificates\n\
              4. Implement rate limiting\n\
-             5. Review access logs regularly"
+             5. Review access logs regularly",
         ),
         3389 => (
             Severity::High,
@@ -564,7 +735,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. Use VPN for remote access\n\
              3. Enable Network Level Authentication (NLA)\n\
              4. Use strong passwords and MFA\n\
-             5. Keep systems patched (BlueKeep, etc.)"
+             5. Keep systems patched (BlueKeep, etc.)",
         ),
         445 => (
             Severity::Critical,
@@ -574,7 +745,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
              2. SMB should never be internet-facing\n\
              3. Disable SMBv1\n\
              4. Use VPN for file sharing needs\n\
-             5. Patch for EternalBlue and similar vulnerabilities"
+             5. Patch for EternalBlue and similar vulnerabilities",
         ),
         _ => {
             // For unknown ports, create a generic info finding
@@ -590,7 +761,8 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
                     1. Verify this port should be publicly accessible\n\
                     2. Ensure the service has proper authentication\n\
                     3. Keep the service updated\n\
-                    4. Monitor access logs".to_string(),
+                    4. Monitor access logs"
+                    .to_string(),
                 references: vec![],
             });
         }
@@ -605,9 +777,7 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
         ),
         affected_asset: format!("{}:{}", ip, port),
         remediation: remediation.to_string(),
-        references: vec![
-            "https://owasp.org/www-project-web-security-testing-guide/".to_string(),
-        ],
+        references: vec!["https://owasp.org/www-project-web-security-testing-guide/".to_string()],
     })
 }
 
@@ -615,62 +785,129 @@ fn create_port_finding(ip: &str, port_info: &scanner::PortInfo) -> Option<Findin
 fn build_summary(findings: &[Finding]) -> (ReportSummary, String) {
     let summary = ReportSummary {
         total_findings: findings.len(),
-        critical_count: findings.iter().filter(|f| f.severity == Severity::Critical).count(),
-        high_count: findings.iter().filter(|f| f.severity == Severity::High).count(),
-        medium_count: findings.iter().filter(|f| f.severity == Severity::Medium).count(),
-        low_count: findings.iter().filter(|f| f.severity == Severity::Low).count(),
-        info_count: findings.iter().filter(|f| f.severity == Severity::Info).count(),
+        critical_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Critical)
+            .count(),
+        high_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::High)
+            .count(),
+        medium_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Medium)
+            .count(),
+        low_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Low)
+            .count(),
+        info_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Info)
+            .count(),
     };
     let grade = compute_grade(&summary);
     (summary, grade)
 }
 
 /// Generate an exposure report from SSL/TLS scan results.
-fn generate_ssl_report(host: &str, port: u16, result: &scanner::ssl::SslScanResult) -> ExposureReport {
+fn generate_ssl_report(
+    host: &str,
+    port: u16,
+    result: &scanner::ssl::SslScanResult,
+) -> ExposureReport {
     let findings = generate_ssl_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: format!("{}:{}", host, port), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: format!("{}:{}", host, port),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate an exposure report from HTTP headers scan results.
-fn generate_headers_report(host: &str, result: &scanner::headers::HeadersScanResult) -> ExposureReport {
+fn generate_headers_report(
+    host: &str,
+    result: &scanner::headers::HeadersScanResult,
+) -> ExposureReport {
     let findings = generate_headers_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: host.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: host.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate an exposure report from DNS scan results.
 fn generate_dns_report(domain: &str, result: &scanner::dns::DnsScanResult) -> ExposureReport {
     let findings = generate_dns_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: domain.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: domain.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate an exposure report from CORS scan results.
 fn generate_cors_report(host: &str, result: &scanner::cors::CorsScanResult) -> ExposureReport {
     let findings = generate_cors_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: host.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: host.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate an exposure report from sensitive paths scan results.
 fn generate_paths_report(host: &str, result: &scanner::paths::PathsScanResult) -> ExposureReport {
     let findings = generate_paths_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: host.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: host.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate an exposure report from technology fingerprint results.
-fn generate_tech_report(host: &str, result: &scanner::techdetect::TechDetectResult) -> ExposureReport {
+fn generate_tech_report(
+    host: &str,
+    result: &scanner::techdetect::TechDetectResult,
+) -> ExposureReport {
     let findings = generate_tech_findings(result);
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: host.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: host.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 /// Generate a combined audit report from all scanner findings.
 fn generate_audit_report(target: &str, findings: Vec<Finding>) -> ExposureReport {
     let (summary, grade) = build_summary(&findings);
-    ExposureReport { target: target.to_string(), scan_time: chrono::Utc::now().to_rfc3339(), findings, summary, grade }
+    ExposureReport {
+        target: target.to_string(),
+        scan_time: chrono::Utc::now().to_rfc3339(),
+        findings,
+        summary,
+        grade,
+    }
 }
 
 fn print_json(report: &ExposureReport) {
@@ -689,12 +926,30 @@ fn print_report(report: &ExposureReport) {
     println!("┌─────────────────────────────────────────────────────────────┐");
     println!("│ SUMMARY                                                     │");
     println!("├─────────────────────────────────────────────────────────────┤");
-    println!("│ Total Findings: {:3}                                         │", report.summary.total_findings);
-    println!("│ Critical:       {:3}                                         │", report.summary.critical_count);
-    println!("│ High:           {:3}                                         │", report.summary.high_count);
-    println!("│ Medium:         {:3}                                         │", report.summary.medium_count);
-    println!("│ Low:            {:3}                                         │", report.summary.low_count);
-    println!("│ Info:           {:3}                                         │", report.summary.info_count);
+    println!(
+        "│ Total Findings: {:3}                                         │",
+        report.summary.total_findings
+    );
+    println!(
+        "│ Critical:       {:3}                                         │",
+        report.summary.critical_count
+    );
+    println!(
+        "│ High:           {:3}                                         │",
+        report.summary.high_count
+    );
+    println!(
+        "│ Medium:         {:3}                                         │",
+        report.summary.medium_count
+    );
+    println!(
+        "│ Low:            {:3}                                         │",
+        report.summary.low_count
+    );
+    println!(
+        "│ Info:           {:3}                                         │",
+        report.summary.info_count
+    );
     println!("└─────────────────────────────────────────────────────────────┘\n");
 
     if report.findings.is_empty() {
@@ -760,27 +1015,31 @@ fn print_report(report: &ExposureReport) {
 }
 
 fn print_sarif(report: &ExposureReport) {
-    let results: Vec<serde_json::Value> = report.findings.iter().map(|f| {
-        let level = match f.severity {
-            Severity::Critical | Severity::High => "error",
-            Severity::Medium => "warning",
-            Severity::Low | Severity::Info => "note",
-        };
-        serde_json::json!({
-            "ruleId": f.title.replace(' ', "-").to_lowercase(),
-            "level": level,
-            "message": { "text": f.description },
-            "locations": [{
-                "physicalLocation": {
-                    "artifactLocation": { "uri": f.affected_asset }
+    let results: Vec<serde_json::Value> = report
+        .findings
+        .iter()
+        .map(|f| {
+            let level = match f.severity {
+                Severity::Critical | Severity::High => "error",
+                Severity::Medium => "warning",
+                Severity::Low | Severity::Info => "note",
+            };
+            serde_json::json!({
+                "ruleId": f.title.replace(' ', "-").to_lowercase(),
+                "level": level,
+                "message": { "text": f.description },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": { "uri": f.affected_asset }
+                    }
+                }],
+                "properties": {
+                    "severity": format!("{:?}", f.severity),
+                    "remediation": f.remediation,
                 }
-            }],
-            "properties": {
-                "severity": format!("{:?}", f.severity),
-                "remediation": f.remediation,
-            }
+            })
         })
-    }).collect();
+        .collect();
 
     let sarif = serde_json::json!({
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
@@ -828,17 +1087,46 @@ fn print_audit_dashboard(results: &[(&str, Result<Vec<Finding>, String>)]) {
                 };
                 // Build findings summary
                 let mut parts: Vec<String> = Vec::new();
-                let crit = findings.iter().filter(|f| f.severity == Severity::Critical).count();
-                let high = findings.iter().filter(|f| f.severity == Severity::High).count();
-                let med = findings.iter().filter(|f| f.severity == Severity::Medium).count();
-                let low = findings.iter().filter(|f| f.severity == Severity::Low).count();
-                let info = findings.iter().filter(|f| f.severity == Severity::Info).count();
-                if crit > 0 { parts.push(format!("{} critical", crit)); }
-                if high > 0 { parts.push(format!("{} high", high)); }
-                if med > 0 { parts.push(format!("{} medium", med)); }
-                if low > 0 { parts.push(format!("{} low", low)); }
-                if info > 0 { parts.push(format!("{} info", info)); }
-                let summary = if parts.is_empty() { "none".to_string() } else { parts.join(", ") };
+                let crit = findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::Critical)
+                    .count();
+                let high = findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::High)
+                    .count();
+                let med = findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::Medium)
+                    .count();
+                let low = findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::Low)
+                    .count();
+                let info = findings
+                    .iter()
+                    .filter(|f| f.severity == Severity::Info)
+                    .count();
+                if crit > 0 {
+                    parts.push(format!("{} critical", crit));
+                }
+                if high > 0 {
+                    parts.push(format!("{} high", high));
+                }
+                if med > 0 {
+                    parts.push(format!("{} medium", med));
+                }
+                if low > 0 {
+                    parts.push(format!("{} low", low));
+                }
+                if info > 0 {
+                    parts.push(format!("{} info", info));
+                }
+                let summary = if parts.is_empty() {
+                    "none".to_string()
+                } else {
+                    parts.join(", ")
+                };
                 println!(
                     "│ {:<16} │ {}{:<4}\x1b[0m   │ {:<18} │",
                     name, color, status, summary
@@ -919,15 +1207,33 @@ pre { background: #0f0f23; padding: 1rem; border-radius: 4px; overflow-x: auto; 
 "#);
     html.push_str("</style>\n</head>\n<body>\n");
     html.push_str("<h1>RSENTINEL SECURITY EXPOSURE REPORT</h1>\n");
-    html.push_str(&format!("<div class=\"meta\">Target: {} | Scan Time: {} | Grade: {}</div>\n", report.target, report.scan_time, report.grade));
+    html.push_str(&format!(
+        "<div class=\"meta\">Target: {} | Scan Time: {} | Grade: {}</div>\n",
+        report.target, report.scan_time, report.grade
+    ));
 
     // Summary badges
     html.push_str("<div class=\"summary\">\n");
-    html.push_str(&format!("<span class=\"badge critical\">{} Critical</span>\n", report.summary.critical_count));
-    html.push_str(&format!("<span class=\"badge high\">{} High</span>\n", report.summary.high_count));
-    html.push_str(&format!("<span class=\"badge medium\">{} Medium</span>\n", report.summary.medium_count));
-    html.push_str(&format!("<span class=\"badge low\">{} Low</span>\n", report.summary.low_count));
-    html.push_str(&format!("<span class=\"badge info\">{} Info</span>\n", report.summary.info_count));
+    html.push_str(&format!(
+        "<span class=\"badge critical\">{} Critical</span>\n",
+        report.summary.critical_count
+    ));
+    html.push_str(&format!(
+        "<span class=\"badge high\">{} High</span>\n",
+        report.summary.high_count
+    ));
+    html.push_str(&format!(
+        "<span class=\"badge medium\">{} Medium</span>\n",
+        report.summary.medium_count
+    ));
+    html.push_str(&format!(
+        "<span class=\"badge low\">{} Low</span>\n",
+        report.summary.low_count
+    ));
+    html.push_str(&format!(
+        "<span class=\"badge info\">{} Info</span>\n",
+        report.summary.info_count
+    ));
     html.push_str("</div>\n");
 
     // Findings table
@@ -965,7 +1271,8 @@ fn build_demo_report() -> ExposureReport {
                 2. Enable Redis AUTH with strong password\n\
                 3. Bind to localhost or private network only\n\
                 4. Enable TLS if remote access is required\n\
-                5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)".to_string(),
+                5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)"
+                .to_string(),
             references: vec!["https://redis.io/docs/management/security/".to_string()],
         },
         Finding {
@@ -980,9 +1287,11 @@ fn build_demo_report() -> ExposureReport {
                 4. Use VPN or IP allowlisting\n\
                 5. Monitor for prompt injection attempts\n\
                 6. Implement output filtering\n\
-                7. Log all interactions for audit".to_string(),
+                7. Log all interactions for audit"
+                .to_string(),
             references: vec![
-                "https://owasp.org/www-project-top-10-for-large-language-model-applications/".to_string(),
+                "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+                    .to_string(),
             ],
         },
         Finding {
@@ -998,7 +1307,8 @@ fn build_demo_report() -> ExposureReport {
                    - WAF rules if applicable\n\
                    - Disable affected feature if possible\n\
                 4. Monitor for exploitation attempts\n\
-                5. CVSS Score: 8.5".to_string(),
+                5. CVSS Score: 8.5"
+                .to_string(),
             references: vec!["https://nvd.nist.gov/vuln/detail/CVE-2024-1234".to_string()],
         },
         Finding {
@@ -1011,7 +1321,8 @@ fn build_demo_report() -> ExposureReport {
                 2. Implement IP allowlisting via firewall\n\
                 3. Use SSH keys only (disable password auth)\n\
                 4. Enable fail2ban or similar brute-force protection\n\
-                5. Consider using a non-standard port".to_string(),
+                5. Consider using a non-standard port"
+                .to_string(),
             references: vec![],
         },
     ];
@@ -1044,11 +1355,26 @@ mod tests {
     fn report_output(findings: Vec<Finding>) -> String {
         let summary = ReportSummary {
             total_findings: findings.len(),
-            critical_count: findings.iter().filter(|f| f.severity == Severity::Critical).count(),
-            high_count: findings.iter().filter(|f| f.severity == Severity::High).count(),
-            medium_count: findings.iter().filter(|f| f.severity == Severity::Medium).count(),
-            low_count: findings.iter().filter(|f| f.severity == Severity::Low).count(),
-            info_count: findings.iter().filter(|f| f.severity == Severity::Info).count(),
+            critical_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Critical)
+                .count(),
+            high_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::High)
+                .count(),
+            medium_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Medium)
+                .count(),
+            low_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Low)
+                .count(),
+            info_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Info)
+                .count(),
         };
         let grade = compute_grade(&summary);
         let report = ExposureReport {
@@ -1065,25 +1391,43 @@ mod tests {
     /// Replicate the box-drawing lines from print_report as format strings.
     fn format_report(report: &ExposureReport) -> String {
         let mut out = String::new();
-        out.push_str(&format!("╔═════════════════════════════════════════════════════════════╗\n"));
-        out.push_str(&format!("║             RSENTINEL SECURITY EXPOSURE REPORT              ║\n"));
-        out.push_str(&format!("╚═════════════════════════════════════════════════════════════╝\n"));
-        out.push_str(&format!("┌─────────────────────────────────────────────────────────────┐\n"));
-        out.push_str(&format!("│ SUMMARY                                                     │\n"));
-        out.push_str(&format!("├─────────────────────────────────────────────────────────────┤\n"));
-        out.push_str(&format!("│ Total Findings: {:3}                                         │\n", report.summary.total_findings));
-        out.push_str(&format!("│ Critical:       {:3}                                         │\n", report.summary.critical_count));
-        out.push_str(&format!("│ High:           {:3}                                         │\n", report.summary.high_count));
-        out.push_str(&format!("│ Medium:         {:3}                                         │\n", report.summary.medium_count));
-        out.push_str(&format!("│ Low:            {:3}                                         │\n", report.summary.low_count));
-        out.push_str(&format!("│ Info:           {:3}                                         │\n", report.summary.info_count));
-        out.push_str(&format!("└─────────────────────────────────────────────────────────────┘\n"));
+        out.push_str("╔═════════════════════════════════════════════════════════════╗\n");
+        out.push_str("║             RSENTINEL SECURITY EXPOSURE REPORT              ║\n");
+        out.push_str("╚═════════════════════════════════════════════════════════════╝\n");
+        out.push_str("┌─────────────────────────────────────────────────────────────┐\n");
+        out.push_str("│ SUMMARY                                                     │\n");
+        out.push_str("├─────────────────────────────────────────────────────────────┤\n");
+        out.push_str(&format!(
+            "│ Total Findings: {:3}                                         │\n",
+            report.summary.total_findings
+        ));
+        out.push_str(&format!(
+            "│ Critical:       {:3}                                         │\n",
+            report.summary.critical_count
+        ));
+        out.push_str(&format!(
+            "│ High:           {:3}                                         │\n",
+            report.summary.high_count
+        ));
+        out.push_str(&format!(
+            "│ Medium:         {:3}                                         │\n",
+            report.summary.medium_count
+        ));
+        out.push_str(&format!(
+            "│ Low:            {:3}                                         │\n",
+            report.summary.low_count
+        ));
+        out.push_str(&format!(
+            "│ Info:           {:3}                                         │\n",
+            report.summary.info_count
+        ));
+        out.push_str("└─────────────────────────────────────────────────────────────┘\n");
         out
     }
 
     #[test]
     fn test_header_box_alignment() {
-        let top    = "╔═════════════════════════════════════════════════════════════╗";
+        let top = "╔═════════════════════════════════════════════════════════════╗";
         let middle = "║             RSENTINEL SECURITY EXPOSURE REPORT              ║";
         let bottom = "╚═════════════════════════════════════════════════════════════╝";
 
@@ -1106,29 +1450,47 @@ mod tests {
 
     #[test]
     fn test_summary_box_alignment() {
-        let border   = "┌─────────────────────────────────────────────────────────────┐";
-        let header   = "│ SUMMARY                                                     │";
-        let divider  = "├─────────────────────────────────────────────────────────────┤";
-        let total    = format!("│ Total Findings: {:3}                                         │", 999);
-        let critical = format!("│ Critical:       {:3}                                         │", 999);
-        let high     = format!("│ High:           {:3}                                         │", 999);
-        let medium   = format!("│ Medium:         {:3}                                         │", 999);
-        let low      = format!("│ Low:            {:3}                                         │", 999);
-        let info     = format!("│ Info:           {:3}                                         │", 999);
-        let bottom   = "└─────────────────────────────────────────────────────────────┘";
+        let border = "┌─────────────────────────────────────────────────────────────┐";
+        let header = "│ SUMMARY                                                     │";
+        let divider = "├─────────────────────────────────────────────────────────────┤";
+        let total = format!(
+            "│ Total Findings: {:3}                                         │",
+            999
+        );
+        let critical = format!(
+            "│ Critical:       {:3}                                         │",
+            999
+        );
+        let high = format!(
+            "│ High:           {:3}                                         │",
+            999
+        );
+        let medium = format!(
+            "│ Medium:         {:3}                                         │",
+            999
+        );
+        let low = format!(
+            "│ Low:            {:3}                                         │",
+            999
+        );
+        let info = format!(
+            "│ Info:           {:3}                                         │",
+            999
+        );
+        let bottom = "└─────────────────────────────────────────────────────────────┘";
 
         let expected_len = border.chars().count();
         let lines: Vec<(&str, String)> = vec![
-            ("border",   border.to_string()),
-            ("header",   header.to_string()),
-            ("divider",  divider.to_string()),
-            ("total",    total),
+            ("border", border.to_string()),
+            ("header", header.to_string()),
+            ("divider", divider.to_string()),
+            ("total", total),
             ("critical", critical),
-            ("high",     high),
-            ("medium",   medium),
-            ("low",      low),
-            ("info",     info),
-            ("bottom",   bottom.to_string()),
+            ("high", high),
+            ("medium", medium),
+            ("low", low),
+            ("info", info),
+            ("bottom", bottom.to_string()),
         ];
 
         for (name, line) in &lines {
@@ -1174,7 +1536,9 @@ mod tests {
         // Every line with │ bookends should be the same length
         let box_lines: Vec<&str> = output
             .lines()
-            .filter(|l| l.starts_with('│') || l.starts_with('┌') || l.starts_with('├') || l.starts_with('└'))
+            .filter(|l| {
+                l.starts_with('│') || l.starts_with('┌') || l.starts_with('├') || l.starts_with('└')
+            })
             .collect();
 
         let first_len = box_lines[0].chars().count();

@@ -71,9 +71,13 @@ impl PathsScanner {
             let url = format!("{}/{}", base_url, path);
             let output = Command::new("curl")
                 .args([
-                    "-sI", "-o", "/dev/null",
-                    "-w", "%{http_code}",
-                    "-m", &self.timeout.to_string(),
+                    "-sI",
+                    "-o",
+                    "/dev/null",
+                    "-w",
+                    "%{http_code}",
+                    "-m",
+                    &self.timeout.to_string(),
                     &url,
                 ])
                 .output()
@@ -169,7 +173,9 @@ pub fn generate_paths_findings_from_map(
                     3. Consider renaming or hiding admin paths\n\
                     4. Implement rate limiting and brute-force protection"
                     .to_string(),
-                references: vec!["https://owasp.org/www-project-web-security-testing-guide/".to_string()],
+                references: vec![
+                    "https://owasp.org/www-project-web-security-testing-guide/".to_string(),
+                ],
             });
         } else if code == 200 && info_good_paths.contains(&path.as_str()) {
             findings.push(crate::checker::Finding {
@@ -187,8 +193,8 @@ pub fn generate_paths_findings_from_map(
             });
         } else if code == 403 {
             // Path exists but is blocked — medium
-            let is_sensitive = critical_paths.contains(&path.as_str())
-                || admin_paths.contains(&path.as_str());
+            let is_sensitive =
+                critical_paths.contains(&path.as_str()) || admin_paths.contains(&path.as_str());
             if is_sensitive {
                 findings.push(crate::checker::Finding {
                     severity: Severity::Medium,
@@ -210,7 +216,7 @@ pub fn generate_paths_findings_from_map(
     }
 
     // Sort findings by severity (most severe first) for consistent output
-    findings.sort_by(|a, b| b.severity.cmp(&a.severity));
+    findings.sort_by_key(|b| std::cmp::Reverse(b.severity));
     findings
 }
 

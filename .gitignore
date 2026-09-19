@@ -1,0 +1,13 @@
+/target
+
+# Environment files (may contain API keys)
+.env
+.env.*
+
+# Dev specs
+SPEC.md
+
+# IDE
+.idea/
+.vscode/
+*.swp

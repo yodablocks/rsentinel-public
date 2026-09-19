@@ -14,7 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned rather than `stable`: a new Rust release can introduce clippy
+      # lints that turn CI red without any change to this repo.
+      - uses: dtolnay/rust-toolchain@1.98.1
         with:
           components: rustfmt, clippy
 

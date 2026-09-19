@@ -153,6 +153,9 @@ async fn main() -> anyhow::Result<()> {
     let markdown = cli.markdown;
     let verbose = !json && !quiet && !sarif && !markdown;
 
+    // Assigned in every arm of the match below. Binding the match directly
+    // would mean restructuring ~370 lines of arms for no behavioural gain.
+    #[allow(clippy::needless_late_init)]
     let report: Option<ExposureReport>;
 
     match cli.command {

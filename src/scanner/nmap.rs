@@ -48,9 +48,8 @@ impl NmapScanner {
     pub fn new() -> Self {
         Self {
             ports: vec![
-                21, 22, 23, 25, 53, 80, 110, 143, 443, 445,
-                993, 995, 1433, 1521, 2375, 2376, 3306, 3389,
-                5432, 5900, 6379, 8080, 8443, 9000, 9200, 27017,
+                21, 22, 23, 25, 53, 80, 110, 143, 443, 445, 993, 995, 1433, 1521, 2375, 2376, 3306,
+                3389, 5432, 5900, 6379, 8080, 8443, 9000, 9200, 27017,
             ],
             version_detection: true,
             timeout: 120,
@@ -63,21 +62,23 @@ impl NmapScanner {
         self.check_nmap_installed()?;
 
         // Build port list
-        let port_list: String = self.ports.iter()
+        let port_list: String = self
+            .ports
+            .iter()
             .map(|p| p.to_string())
             .collect::<Vec<_>>()
             .join(",");
 
         // Build nmap command
         let mut args = vec![
-            "-Pn".to_string(),           // Skip host discovery (assume online)
-            "-T4".to_string(),           // Aggressive timing
-            format!("-p{}", port_list),  // Ports to scan
-            "--open".to_string(),        // Only show open ports
+            "-Pn".to_string(),          // Skip host discovery (assume online)
+            "-T4".to_string(),          // Aggressive timing
+            format!("-p{}", port_list), // Ports to scan
+            "--open".to_string(),       // Only show open ports
         ];
 
         if self.version_detection {
-            args.push("-sV".to_string());        // Version detection
+            args.push("-sV".to_string()); // Version detection
             args.push("--version-light".to_string()); // Light version scan (faster)
         }
 
@@ -140,17 +141,17 @@ impl NmapScanner {
 
         for line in output.lines() {
             // Parse port lines: "22/tcp   open  ssh     OpenSSH 8.9"
-            if line.contains("/tcp") || line.contains("/udp") {
-                if let Some(port_info) = self.parse_port_line(line) {
-                    ports.push(port_info);
-                }
+            if (line.contains("/tcp") || line.contains("/udp"))
+                && let Some(port_info) = self.parse_port_line(line)
+            {
+                ports.push(port_info);
             }
 
             // Parse scan time
-            if line.contains("scanned in") {
-                if let Some(time) = self.parse_scan_time(line) {
-                    scan_time = time;
-                }
+            if line.contains("scanned in")
+                && let Some(time) = self.parse_scan_time(line)
+            {
+                scan_time = time;
             }
         }
 

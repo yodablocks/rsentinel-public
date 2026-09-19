@@ -2,19 +2,34 @@
 //!
 //! VALIDATION MODULE: Tests that defenses work as intended.
 
-use rsentinel::checker::{ExposureReport, Finding, Severity};
-use rsentinel::checker::exposure::{ReportSummary, compute_grade};
 use pretty_assertions::assert_eq;
+use rsentinel::checker::exposure::{ReportSummary, compute_grade};
+use rsentinel::checker::{ExposureReport, Finding, Severity};
 
 /// Helper to create test reports
 fn make_report(target: &str, findings: Vec<Finding>) -> ExposureReport {
     let summary = ReportSummary {
         total_findings: findings.len(),
-        critical_count: findings.iter().filter(|f| f.severity == Severity::Critical).count(),
-        high_count: findings.iter().filter(|f| f.severity == Severity::High).count(),
-        medium_count: findings.iter().filter(|f| f.severity == Severity::Medium).count(),
-        low_count: findings.iter().filter(|f| f.severity == Severity::Low).count(),
-        info_count: findings.iter().filter(|f| f.severity == Severity::Info).count(),
+        critical_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Critical)
+            .count(),
+        high_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::High)
+            .count(),
+        medium_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Medium)
+            .count(),
+        low_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Low)
+            .count(),
+        info_count: findings
+            .iter()
+            .filter(|f| f.severity == Severity::Info)
+            .count(),
     };
 
     let grade = compute_grade(&summary);
@@ -52,15 +67,15 @@ fn test_severity_ordering() {
 #[test]
 fn test_cvss_severity_mapping() {
     // CVSS 3.0 severity ranges
-    assert_eq!(Severity::from_cvss(10.0), Severity::Critical);  // 9.0-10.0
+    assert_eq!(Severity::from_cvss(10.0), Severity::Critical); // 9.0-10.0
     assert_eq!(Severity::from_cvss(9.0), Severity::Critical);
-    assert_eq!(Severity::from_cvss(8.9), Severity::High);        // 7.0-8.9
+    assert_eq!(Severity::from_cvss(8.9), Severity::High); // 7.0-8.9
     assert_eq!(Severity::from_cvss(7.0), Severity::High);
-    assert_eq!(Severity::from_cvss(6.9), Severity::Medium);      // 4.0-6.9
+    assert_eq!(Severity::from_cvss(6.9), Severity::Medium); // 4.0-6.9
     assert_eq!(Severity::from_cvss(4.0), Severity::Medium);
-    assert_eq!(Severity::from_cvss(3.9), Severity::Low);         // 0.1-3.9
+    assert_eq!(Severity::from_cvss(3.9), Severity::Low); // 0.1-3.9
     assert_eq!(Severity::from_cvss(0.1), Severity::Low);
-    assert_eq!(Severity::from_cvss(0.0), Severity::Info);        // 0.0 = Info
+    assert_eq!(Severity::from_cvss(0.0), Severity::Info); // 0.0 = Info
 }
 
 /// Test that report summary correctly counts findings by severity.
@@ -90,35 +105,41 @@ fn test_report_summary_counts() {
 /// Test has_critical detection.
 #[test]
 fn test_has_critical_detection() {
-    let with_critical = make_report("test", vec![
-        make_finding(Severity::Critical, "Critical Issue"),
-    ]);
+    let with_critical = make_report(
+        "test",
+        vec![make_finding(Severity::Critical, "Critical Issue")],
+    );
     assert!(with_critical.has_critical());
 
-    let without_critical = make_report("test", vec![
-        make_finding(Severity::High, "High Issue"),
-        make_finding(Severity::Medium, "Medium Issue"),
-    ]);
+    let without_critical = make_report(
+        "test",
+        vec![
+            make_finding(Severity::High, "High Issue"),
+            make_finding(Severity::Medium, "Medium Issue"),
+        ],
+    );
     assert!(!without_critical.has_critical());
 }
 
 /// Test has_high_or_critical detection.
 #[test]
 fn test_has_high_or_critical_detection() {
-    let with_high = make_report("test", vec![
-        make_finding(Severity::High, "High Issue"),
-    ]);
+    let with_high = make_report("test", vec![make_finding(Severity::High, "High Issue")]);
     assert!(with_high.has_high_or_critical());
 
-    let with_critical = make_report("test", vec![
-        make_finding(Severity::Critical, "Critical Issue"),
-    ]);
+    let with_critical = make_report(
+        "test",
+        vec![make_finding(Severity::Critical, "Critical Issue")],
+    );
     assert!(with_critical.has_high_or_critical());
 
-    let with_medium_only = make_report("test", vec![
-        make_finding(Severity::Medium, "Medium Issue"),
-        make_finding(Severity::Low, "Low Issue"),
-    ]);
+    let with_medium_only = make_report(
+        "test",
+        vec![
+            make_finding(Severity::Medium, "Medium Issue"),
+            make_finding(Severity::Low, "Low Issue"),
+        ],
+    );
     assert!(!with_medium_only.has_high_or_critical());
 }
 
@@ -155,9 +176,10 @@ fn test_finding_serialization() {
 /// Test report JSON output for integration.
 #[test]
 fn test_report_json_output() {
-    let report = make_report("test-target", vec![
-        make_finding(Severity::High, "Test Issue"),
-    ]);
+    let report = make_report(
+        "test-target",
+        vec![make_finding(Severity::High, "Test Issue")],
+    );
 
     let json = serde_json::to_string_pretty(&report).expect("serialize report");
 

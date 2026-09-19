@@ -2,8 +2,8 @@
 //!
 //! VALIDATION MODULE: Tests rate limiting and API response handling.
 
-use rsentinel::api::{RateLimiter, CveDbClient};
 use rsentinel::api::cvedb::CveInfo;
+use rsentinel::api::{CveDbClient, RateLimiter};
 
 /// Test rate limiter allows initial request.
 #[test]
@@ -33,10 +33,10 @@ fn test_rate_limiter_default() {
 #[test]
 fn test_cve_filter_high_severity() {
     let cves = vec![
-        make_cve("CVE-2024-0001", 9.8),  // Critical
-        make_cve("CVE-2024-0002", 7.5),  // High
-        make_cve("CVE-2024-0003", 4.0),  // Medium
-        make_cve("CVE-2024-0004", 2.0),  // Low
+        make_cve("CVE-2024-0001", 9.8), // Critical
+        make_cve("CVE-2024-0002", 7.5), // High
+        make_cve("CVE-2024-0003", 4.0), // Medium
+        make_cve("CVE-2024-0004", 2.0), // Low
     ];
 
     let high_sev = CveDbClient::filter_high_severity(&cves);
@@ -50,9 +50,9 @@ fn test_cve_filter_high_severity() {
 #[test]
 fn test_cve_filter_critical() {
     let cves = vec![
-        make_cve("CVE-2024-0001", 9.8),  // Critical
-        make_cve("CVE-2024-0002", 8.9),  // High (not critical)
-        make_cve("CVE-2024-0003", 9.0),  // Critical (boundary)
+        make_cve("CVE-2024-0001", 9.8), // Critical
+        make_cve("CVE-2024-0002", 8.9), // High (not critical)
+        make_cve("CVE-2024-0003", 9.0), // Critical (boundary)
     ];
 
     let critical = CveDbClient::filter_critical(&cves);
@@ -66,9 +66,9 @@ fn test_cve_filter_critical() {
 #[test]
 fn test_cve_filter_high_epss() {
     let cves = vec![
-        make_cve_with_epss("CVE-2024-0001", 5.0, 0.95),  // High EPSS
-        make_cve_with_epss("CVE-2024-0002", 9.0, 0.10),  // Low EPSS
-        make_cve_with_epss("CVE-2024-0003", 7.0, 0.80),  // Medium-High EPSS
+        make_cve_with_epss("CVE-2024-0001", 5.0, 0.95), // High EPSS
+        make_cve_with_epss("CVE-2024-0002", 9.0, 0.10), // Low EPSS
+        make_cve_with_epss("CVE-2024-0003", 7.0, 0.80), // Medium-High EPSS
     ];
 
     let high_epss = CveDbClient::filter_high_epss(&cves, 0.7);
@@ -91,19 +91,17 @@ fn test_cve_filter_empty() {
 /// Test CVE with missing CVSS (should be treated as 0.0).
 #[test]
 fn test_cve_missing_cvss() {
-    let cves = vec![
-        CveInfo {
-            cve_id: "CVE-2024-0001".to_string(),
-            summary: None,
-            cvss: None,  // Missing CVSS
-            cvss_version: None,
-            references: vec![],
-            published_time: None,
-            last_modified_time: None,
-            epss: None,
-            cpes: vec![],
-        },
-    ];
+    let cves = vec![CveInfo {
+        cve_id: "CVE-2024-0001".to_string(),
+        summary: None,
+        cvss: None, // Missing CVSS
+        cvss_version: None,
+        references: vec![],
+        published_time: None,
+        last_modified_time: None,
+        epss: None,
+        cpes: vec![],
+    }];
 
     // Should not appear in high severity (treated as 0.0)
     assert!(CveDbClient::filter_high_severity(&cves).is_empty());

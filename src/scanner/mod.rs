@@ -10,16 +10,16 @@ pub mod paths;
 pub mod ssl;
 pub mod techdetect;
 
-pub use nmap::{NmapScanner, ScanResult, PortInfo};
 #[allow(unused_imports)]
-pub use ssl::{SslScanner, SslScanResult, CertInfo, ProtocolInfo, SslError};
+pub use cors::{CorsError, CorsScanResult, CorsScanner};
 #[allow(unused_imports)]
-pub use headers::{HeadersScanner, HeadersScanResult, HeadersError};
+pub use dns::{DnsError, DnsScanResult, DnsScanner};
 #[allow(unused_imports)]
-pub use dns::{DnsScanner, DnsScanResult, DnsError};
+pub use headers::{HeadersError, HeadersScanResult, HeadersScanner};
+pub use nmap::{NmapScanner, PortInfo, ScanResult};
 #[allow(unused_imports)]
-pub use cors::{CorsScanner, CorsScanResult, CorsError};
+pub use paths::{PathsError, PathsScanResult, PathsScanner};
 #[allow(unused_imports)]
-pub use paths::{PathsScanner, PathsScanResult, PathsError};
+pub use ssl::{CertInfo, ProtocolInfo, SslError, SslScanResult, SslScanner};
 #[allow(unused_imports)]
-pub use techdetect::{TechDetectScanner, TechDetectResult, TechDetectError};
+pub use techdetect::{TechDetectError, TechDetectResult, TechDetectScanner};

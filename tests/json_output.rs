@@ -13,8 +13,8 @@ fn cargo_run(args: &[&str]) -> std::process::Output {
 fn test_demo_json_is_valid_json() {
     let output = cargo_run(&["demo", "--json"]);
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let parsed: serde_json::Value = serde_json::from_str(&stdout)
-        .expect("demo --json output is not valid JSON");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&stdout).expect("demo --json output is not valid JSON");
     assert!(parsed.is_object());
 }
 
@@ -36,7 +36,9 @@ fn test_demo_json_has_4_findings() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let parsed: serde_json::Value = serde_json::from_str(&stdout).unwrap();
 
-    let findings = parsed["findings"].as_array().expect("findings is not an array");
+    let findings = parsed["findings"]
+        .as_array()
+        .expect("findings is not an array");
     assert_eq!(findings.len(), 4, "demo should produce exactly 4 findings");
 }
 
@@ -46,16 +48,22 @@ fn test_demo_json_no_progress_lines() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     // JSON mode should suppress emoji progress lines
-    assert!(!stdout.contains("Running demo"), "progress line leaked into JSON output");
-    assert!(!stdout.contains("🔍"), "emoji progress line leaked into JSON output");
+    assert!(
+        !stdout.contains("Running demo"),
+        "progress line leaked into JSON output"
+    );
+    assert!(
+        !stdout.contains("🔍"),
+        "emoji progress line leaked into JSON output"
+    );
 }
 
 #[test]
 fn test_demo_sarif_is_valid_json() {
     let output = cargo_run(&["demo", "--sarif"]);
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let parsed: serde_json::Value = serde_json::from_str(&stdout)
-        .expect("demo --sarif output is not valid JSON");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&stdout).expect("demo --sarif output is not valid JSON");
     assert_eq!(parsed["version"], "2.1.0");
     assert!(parsed["runs"].as_array().is_some());
 }
@@ -66,14 +74,23 @@ fn test_demo_quiet_suppresses_progress() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     // Quiet mode should suppress progress but still show the report
-    assert!(!stdout.contains("Running demo"), "progress line not suppressed by -Q");
-    assert!(stdout.contains("RSENTINEL SECURITY EXPOSURE REPORT"), "report missing in quiet mode");
+    assert!(
+        !stdout.contains("Running demo"),
+        "progress line not suppressed by -Q"
+    );
+    assert!(
+        stdout.contains("RSENTINEL SECURITY EXPOSURE REPORT"),
+        "report missing in quiet mode"
+    );
 }
 
 #[test]
 fn test_demo_fail_on_medium_exits_nonzero() {
     let output = cargo_run(&["demo", "--fail-on", "medium"]);
-    assert!(!output.status.success(), "--fail-on medium should exit non-zero for demo (has critical+high+medium)");
+    assert!(
+        !output.status.success(),
+        "--fail-on medium should exit non-zero for demo (has critical+high+medium)"
+    );
 }
 
 #[test]

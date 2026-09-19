@@ -18,7 +18,7 @@ impl RateLimiter {
     /// Create a new rate limiter with specified requests per second.
     pub fn new(requests_per_second: u32) -> Self {
         let quota = Quota::per_second(
-            NonZeroU32::new(requests_per_second).expect("requests_per_second must be > 0")
+            NonZeroU32::new(requests_per_second).expect("requests_per_second must be > 0"),
         );
         Self {
             inner: Arc::new(GovRateLimiter::direct(quota)),
@@ -32,7 +32,7 @@ impl RateLimiter {
 
     /// Try to acquire without waiting. Returns true if allowed.
     #[allow(dead_code)]
-        pub fn try_acquire(&self) -> bool {
+    pub fn try_acquire(&self) -> bool {
         self.inner.check().is_ok()
     }
 }

@@ -146,7 +146,9 @@ pub fn generate_tech_findings(result: &TechDetectResult) -> Vec<crate::checker::
                 2. Configure the web server to suppress version information\n\
                 3. Use a reverse proxy to strip server headers"
                 .to_string(),
-            references: vec!["https://owasp.org/www-project-web-security-testing-guide/".to_string()],
+            references: vec![
+                "https://owasp.org/www-project-web-security-testing-guide/".to_string(),
+            ],
         });
     }
 
@@ -257,8 +259,14 @@ mod tests {
         let findings = generate_tech_findings(&result);
         assert_eq!(findings.len(), 5);
         // Server(Medium) + X-Powered-By(Medium) + 3 Low
-        let medium_count = findings.iter().filter(|f| f.severity == Severity::Medium).count();
-        let low_count = findings.iter().filter(|f| f.severity == Severity::Low).count();
+        let medium_count = findings
+            .iter()
+            .filter(|f| f.severity == Severity::Medium)
+            .count();
+        let low_count = findings
+            .iter()
+            .filter(|f| f.severity == Severity::Low)
+            .count();
         assert_eq!(medium_count, 2);
         assert_eq!(low_count, 3);
     }

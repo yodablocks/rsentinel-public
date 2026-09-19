@@ -2,8 +2,8 @@
 //!
 //! HARDENING MODULE: Analyzes detected exposures and provides remediation guidance.
 
-use crate::api::{CveDbClient, ShodanClient};
 use crate::api::shodan::{HostInfo, SearchMatch};
+use crate::api::{CveDbClient, ShodanClient};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -84,11 +84,26 @@ impl ExposureReport {
         let target = target.into();
         let summary = ReportSummary {
             total_findings: findings.len(),
-            critical_count: findings.iter().filter(|f| f.severity == Severity::Critical).count(),
-            high_count: findings.iter().filter(|f| f.severity == Severity::High).count(),
-            medium_count: findings.iter().filter(|f| f.severity == Severity::Medium).count(),
-            low_count: findings.iter().filter(|f| f.severity == Severity::Low).count(),
-            info_count: findings.iter().filter(|f| f.severity == Severity::Info).count(),
+            critical_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Critical)
+                .count(),
+            high_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::High)
+                .count(),
+            medium_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Medium)
+                .count(),
+            low_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Low)
+                .count(),
+            info_count: findings
+                .iter()
+                .filter(|f| f.severity == Severity::Info)
+                .count(),
         };
         let grade = compute_grade(&summary);
 
@@ -108,7 +123,7 @@ impl ExposureReport {
 
     /// Check if any high or critical findings exist.
     #[allow(dead_code)]
-        pub fn has_high_or_critical(&self) -> bool {
+    pub fn has_high_or_critical(&self) -> bool {
         self.summary.critical_count > 0 || self.summary.high_count > 0
     }
 }
@@ -166,7 +181,10 @@ impl ExposureChecker {
 
         // Check for known vulnerabilities
         if !host.vulns.is_empty() {
-            findings.extend(self.analyze_vulnerabilities(&host.ip_str, &host.vulns).await);
+            findings.extend(
+                self.analyze_vulnerabilities(&host.ip_str, &host.vulns)
+                    .await,
+            );
         }
 
         // Check for exposed services that shouldn't be public
@@ -193,7 +211,9 @@ impl ExposureChecker {
             8080,  // Common dev/proxy port
             8443,  // Alternative HTTPS
             9000,  // Various admin interfaces
-        ].into_iter().collect();
+        ]
+        .into_iter()
+        .collect();
 
         for port in &host.ports {
             if high_risk_ports.contains(port) {
@@ -214,7 +234,7 @@ impl ExposureChecker {
                  2. Implement IP allowlisting via firewall\n\
                  3. Use SSH keys only (disable password auth)\n\
                  4. Enable fail2ban or similar brute-force protection\n\
-                 5. Consider using a non-standard port"
+                 5. Consider using a non-standard port",
             ),
             23 => (
                 Severity::Critical,
@@ -223,7 +243,7 @@ impl ExposureChecker {
                  1. IMMEDIATELY disable Telnet service\n\
                  2. Replace with SSH for remote access\n\
                  3. Block port 23 at firewall level\n\
-                 4. Audit for any credentials transmitted over Telnet"
+                 4. Audit for any credentials transmitted over Telnet",
             ),
             3306 => (
                 Severity::High,
@@ -233,7 +253,7 @@ impl ExposureChecker {
                  2. Use VPN or SSH tunnel for database access\n\
                  3. Ensure bind-address is set to 127.0.0.1 or private IP\n\
                  4. Review and restrict database user privileges\n\
-                 5. Enable TLS for database connections"
+                 5. Enable TLS for database connections",
             ),
             5432 => (
                 Severity::High,
@@ -243,7 +263,7 @@ impl ExposureChecker {
                  2. Configure pg_hba.conf to restrict access\n\
                  3. Use VPN or SSH tunnel for remote access\n\
                  4. Enable SSL in postgresql.conf\n\
-                 5. Review database user permissions"
+                 5. Review database user permissions",
             ),
             6379 => (
                 Severity::Critical,
@@ -253,7 +273,7 @@ impl ExposureChecker {
                  2. Enable Redis AUTH with strong password\n\
                  3. Bind to localhost or private network only\n\
                  4. Enable TLS if remote access is required\n\
-                 5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)"
+                 5. Disable dangerous commands (FLUSHALL, CONFIG, etc.)",
             ),
             27017 => (
                 Severity::Critical,
@@ -263,7 +283,7 @@ impl ExposureChecker {
                  2. Enable authentication (--auth flag)\n\
                  3. Bind to localhost: bindIp: 127.0.0.1\n\
                  4. Enable TLS/SSL for connections\n\
-                 5. Create specific users with minimal privileges"
+                 5. Create specific users with minimal privileges",
             ),
             9200 => (
                 Severity::High,
@@ -273,7 +293,7 @@ impl ExposureChecker {
                  2. Enable X-Pack security features\n\
                  3. Set network.host to private IP\n\
                  4. Implement authentication and TLS\n\
-                 5. Use reverse proxy with auth for any web access"
+                 5. Use reverse proxy with auth for any web access",
             ),
             2375 | 2376 => (
                 Severity::Critical,
@@ -283,7 +303,7 @@ impl ExposureChecker {
                  2. Use TLS client certificates if remote access needed\n\
                  3. Block ports 2375/2376 at firewall\n\
                  4. Use SSH tunneling for remote Docker access\n\
-                 5. Consider using Docker contexts with SSH"
+                 5. Consider using Docker contexts with SSH",
             ),
             8080 => (
                 Severity::Medium,
@@ -293,7 +313,7 @@ impl ExposureChecker {
                  2. Ensure proper authentication is enabled\n\
                  3. Use HTTPS (port 443) for production\n\
                  4. Implement rate limiting\n\
-                 5. Review access logs regularly"
+                 5. Review access logs regularly",
             ),
             _ => (
                 Severity::Low,
@@ -302,7 +322,7 @@ impl ExposureChecker {
                  1. Review if this port should be publicly accessible\n\
                  2. Implement firewall rules to restrict access\n\
                  3. Ensure the service has proper authentication\n\
-                 4. Monitor access logs for suspicious activity"
+                 4. Monitor access logs for suspicious activity",
             ),
         };
 
@@ -329,7 +349,10 @@ impl ExposureChecker {
             findings.push(Finding {
                 severity,
                 title: format!("Vulnerability: {}", cve.cve_id),
-                description: cve.summary.clone().unwrap_or_else(|| "No description available".to_string()),
+                description: cve
+                    .summary
+                    .clone()
+                    .unwrap_or_else(|| "No description available".to_string()),
                 affected_asset: ip.to_string(),
                 remediation: format!(
                     "HARDENING:\n\
@@ -357,30 +380,35 @@ impl ExposureChecker {
 
         for banner in &host.data {
             // Check for exposed admin interfaces
-            if let Some(http) = &banner.http {
-                if let Some(title) = &http.title {
-                    let title_lower = title.to_lowercase();
+            if let Some(http) = &banner.http
+                && let Some(title) = &http.title
+            {
+                let title_lower = title.to_lowercase();
 
-                    if title_lower.contains("admin") || title_lower.contains("dashboard") {
-                        findings.push(Finding {
-                            severity: Severity::High,
-                            title: "Admin Interface Exposed".to_string(),
-                            description: format!("Admin interface '{}' is publicly accessible", title),
-                            affected_asset: format!("{}:{}", host.ip_str, banner.port),
-                            remediation: "HARDENING:\n\
+                if title_lower.contains("admin") || title_lower.contains("dashboard") {
+                    findings.push(Finding {
+                        severity: Severity::High,
+                        title: "Admin Interface Exposed".to_string(),
+                        description: format!("Admin interface '{}' is publicly accessible", title),
+                        affected_asset: format!("{}:{}", host.ip_str, banner.port),
+                        remediation: "HARDENING:\n\
                                 1. Place admin interfaces behind VPN\n\
                                 2. Implement IP allowlisting\n\
                                 3. Enable MFA for admin access\n\
                                 4. Use strong authentication\n\
-                                5. Consider using a separate subdomain with restricted access".to_string(),
-                            references: vec![],
-                        });
-                    }
+                                5. Consider using a separate subdomain with restricted access"
+                            .to_string(),
+                        references: vec![],
+                    });
+                }
 
-                    // Check for exposed AI/agent interfaces
-                    if title_lower.contains("claude") || title_lower.contains("anthropic")
-                        || title_lower.contains("ai agent") || title_lower.contains("llm") {
-                        findings.push(Finding {
+                // Check for exposed AI/agent interfaces
+                if title_lower.contains("claude")
+                    || title_lower.contains("anthropic")
+                    || title_lower.contains("ai agent")
+                    || title_lower.contains("llm")
+                {
+                    findings.push(Finding {
                             severity: Severity::Critical,
                             title: "AI/Agent Interface Exposed".to_string(),
                             description: format!("AI interface '{}' is publicly accessible", title),
@@ -397,31 +425,31 @@ impl ExposureChecker {
                                 "https://owasp.org/www-project-top-10-for-large-language-model-applications/".to_string(),
                             ],
                         });
-                    }
                 }
             }
 
             // Check for version disclosure
-            if let Some(version) = &banner.version {
-                if !version.is_empty() {
-                    findings.push(Finding {
-                        severity: Severity::Low,
-                        title: "Service Version Disclosed".to_string(),
-                        description: format!(
-                            "Service {} version {} is disclosed on port {}",
-                            banner.product.as_deref().unwrap_or("unknown"),
-                            version,
-                            banner.port
-                        ),
-                        affected_asset: format!("{}:{}", host.ip_str, banner.port),
-                        remediation: "HARDENING:\n\
+            if let Some(version) = &banner.version
+                && !version.is_empty()
+            {
+                findings.push(Finding {
+                    severity: Severity::Low,
+                    title: "Service Version Disclosed".to_string(),
+                    description: format!(
+                        "Service {} version {} is disclosed on port {}",
+                        banner.product.as_deref().unwrap_or("unknown"),
+                        version,
+                        banner.port
+                    ),
+                    affected_asset: format!("{}:{}", host.ip_str, banner.port),
+                    remediation: "HARDENING:\n\
                             1. Configure service to hide version information\n\
                             2. For nginx: server_tokens off;\n\
                             3. For Apache: ServerTokens Prod\n\
-                            4. This reduces reconnaissance value for attackers".to_string(),
-                        references: vec![],
-                    });
-                }
+                            4. This reduces reconnaissance value for attackers"
+                        .to_string(),
+                    references: vec![],
+                });
             }
         }
 
@@ -450,7 +478,8 @@ impl ExposureChecker {
                 3. Implement proper authentication\n\
                 4. Add rate limiting and abuse prevention\n\
                 5. Enable comprehensive logging\n\
-                6. Consider using a CDN/WAF for protection".to_string(),
+                6. Consider using a CDN/WAF for protection"
+                .to_string(),
             references: vec![],
         });
 
